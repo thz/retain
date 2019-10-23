@@ -6,9 +6,9 @@ A simple filter to determine expendable named "snapshots" based on a retention s
 
 A "snapshot" can be any string which can be parsed as a time.
 
-A retention specification can specify a number of most recent snapshots to keep per: hour, day, week, month, year.
+A retention specification can specify a number of most recent snapshots to keep per distinct: minute, hour, day, week, month, year.
 
-`retain` reads one name per line on stdin, gives some verbosity on stderr and outputs all names which can be removed while still keeping all most recent files per retention specification.
+`retain` reads one name per line on stdin, gives some verbosity on stderr and outputs all names which can be removed while still keeping all most recent files (names) per distinct period of time (retention specification).
 
 ### Example:
 

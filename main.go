@@ -32,11 +32,12 @@ import (
 )
 
 const (
-	Hourly    = "2006-01-02T15"
-	Daily     = "2006-01-02"
-	Monthly   = "2006-01"
-	Weekly    = "%d-W%02d"
-	Yearly    = "2006"
+	Minute    = "2006-01-02T15:04"
+	Hour      = "2006-01-02T15"
+	Day       = "2006-01-02"
+	Month     = "2006-01"
+	Week      = "%d-W%02d"
+	Year      = "2006"
 	StdFormat = "2006-01-02T15:04:05MST"
 )
 
@@ -52,7 +53,7 @@ type Retention struct {
 // the starting time of the period and the string representation
 // of that period.
 func (retention Retention) Align(t time.Time) (time.Time, string) {
-	if retention.alias == "weekly" {
+	if retention.alias == "week" {
 		// Find the first day of the week.
 		start := t.Truncate(time.Hour * 24)
 		for {
@@ -64,7 +65,7 @@ func (retention Retention) Align(t time.Time) (time.Time, string) {
 			start = start.Add(-time.Hour * 24)
 		}
 		y, w := start.ISOWeek()
-		return start, fmt.Sprintf(Weekly, y, w)
+		return start, fmt.Sprintf(Week, y, w)
 	}
 
 	// Just truncate to the start of the respective retention period.
@@ -101,21 +102,24 @@ func getRetentionsFromSpec(spec string) ([]*Retention, error) {
 			return nil, fmt.Errorf("invalid field in retention spec [%s]: %v", f, err)
 		}
 		switch string(f[0]) {
+		case "M":
+			retentions = append(retentions, &Retention{
+				alias: "minute", duration: time.Minute, timeformat: Minute, keep: i})
 		case "h":
 			retentions = append(retentions, &Retention{
-				alias: "hourly", duration: time.Hour, timeformat: Hourly, keep: i})
+				alias: "hour", duration: time.Hour, timeformat: Hour, keep: i})
 		case "d":
 			retentions = append(retentions, &Retention{
-				alias: "daily", duration: time.Hour * 24, timeformat: Daily, keep: i})
+				alias: "day", duration: time.Hour * 24, timeformat: Day, keep: i})
 		case "w":
 			retentions = append(retentions, &Retention{
-				alias: "weekly", duration: time.Hour * 24 * 7, keep: i})
+				alias: "week", duration: time.Hour * 24 * 7, keep: i})
 		case "m":
 			retentions = append(retentions, &Retention{
-				alias: "monthly", timeformat: Monthly, keep: i})
+				alias: "month", timeformat: Month, keep: i})
 		case "y":
 			retentions = append(retentions, &Retention{
-				alias: "yearly", timeformat: Yearly, keep: i})
+				alias: "year", timeformat: Year, keep: i})
 		}
 	}
 	return retentions, nil
@@ -125,7 +129,7 @@ func main() {
 	log.SetFormatter(&log.TextFormatter{DisableTimestamp: true})
 
 	var flagRetentionSpec, flagInputFormat string
-	flag.StringVar(&flagRetentionSpec, "r", "y5 m24 w8 d21 h72", "the retention specification")
+	flag.StringVar(&flagRetentionSpec, "r", "y5 m24 w8 d21 h72 M30", "the retention specification")
 	flag.StringVar(&flagInputFormat, "f", StdFormat, "the time parsing format for input snaps")
 	flag.Parse()
 	log.Printf("Working with retention spec %q.", flagRetentionSpec)
@@ -177,7 +181,7 @@ func main() {
 
 	// Log retained snaps.
 	for _, r := range retentions {
-		log.Printf("Retention %q:\n", r.alias)
+		log.Printf("Retention per distinct %s:\n", r.alias)
 		for idx, k := range sortedKeys(r.snaps) {
 			log.Printf("  %3d %s -> %s\n", idx, k, r.snaps[k].name)
 		}
